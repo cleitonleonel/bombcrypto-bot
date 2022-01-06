@@ -86,15 +86,15 @@ sudo apt-get update && sudo apt-get install python3-pyqt5 -y \
     && sudo apt-get install scrot -y  \
     && sudo apt-get install wmctrl -y \
     && sudo apt-get install xdotool -y \
-    && apt-get install xclip -y \
-    && apt-get install python3-pip -y \
-    && apt-get install python3-tk python3-dev -y \
+    && sudo apt-get install xclip -y \
+    && sudo apt-get install python3-pip -y \
+    && sudo apt-get install python3-tk python3-dev -y \
     && pip3 install pyautogui ; pip3 install python-xlib
 ```
 
 ```shell
 git clone https://github.com/mpcabete/bombcrypto-bot.git /root/Desktop/bombcrypto-bot \
-    && pip install -r /root/Desktop/bombcrypto-bot/requirements.txt
+    && pip3 install -r /root/Desktop/bombcrypto-bot/requirements.txt
 ```
 
 ### Pronto! Agora é só iniciar o bot com o comando
