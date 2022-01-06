@@ -154,9 +154,9 @@
   # Opções disponíveis: False ou True
   save_log_to_file: False
 
-  # [en_US] Enable or disable the use of multiple accounts (tabs)
+  # [en_US] Use of multiple accounts (tabs)
   #
-  # [pt_BR] Ativar ou desativar o uso de múltiplas contas (abas)
+  # [pt_BR] Uso de múltiplas contas (abas)
   multiple_tabs:
 
     # [en_US] Window control system...
