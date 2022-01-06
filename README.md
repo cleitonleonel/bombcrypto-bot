@@ -17,6 +17,9 @@ Este é um fork de [bombcrypto-bot](https://github.com/mpcabete/bombcrypto-bot) 
 #### Os desenvolvedores do jogo se pronunciaram e agora o uso de auto clickers e o uso de bots é oficialmente PROIBIDO.  Não me responsabilizo por eventuais penalidades sofridas por quem usar o bot, use por sua própria conta e risco.
 
 # Instalação:
+
+### Windows
+
 ### Baixe e instale o Python pelo [site](https://www.python.org/downloads/) ou pela [windows store](https://www.microsoft.com/p/python-37/9nj46sx7x90p?activetab=pivot:overviewtab).
 
 Se você baixar pelo site é importante marcar a opção para adicionar o
@@ -72,6 +75,35 @@ Para iniciar use o comando
 python3 index.py
 ```
 
+
+### Linux
+
+```shell
+sudo apt-get update && sudo apt-get install python3-pyqt5 -y \
+    && sudo apt-get install git -y \
+    && sudo apt-get install pyqt5-dev-tools -y \
+    && sudo apt-get install qttools5-dev-tools -y \
+    && sudo apt-get install scrot -y  \
+    && sudo apt-get install wmctrl -y \
+    && sudo apt-get install xdotool -y \
+    && apt-get install xclip -y \
+    && apt-get install python3-pip -y \
+    && apt-get install python3-tk python3-dev -y \
+    && pip3 install pyautogui ; pip3 install python-xlib
+```
+
+```shell
+git clone https://github.com/mpcabete/bombcrypto-bot.git /root/Desktop/bombcrypto-bot \
+    && pip install -r /root/Desktop/bombcrypto-bot/requirements.txt
+```
+
+### Pronto! Agora é só iniciar o bot com o comando
+
+```python
+python3 index.py
+```
+
+### Informações Úteis: 
 Assim que ele iniciar ele vai começar mandando os bonecos trabalhar. Para que ele funcione é preciso que a janela do game esteja aparecendo na sua tela.
 Ele vai constantemente checar se você foi desconectado para realizar o login novamente, e se o botão “new map” tá na tela para clicar nele.
 A cada 15 minutos ele manda todos os heróis taralharem.
