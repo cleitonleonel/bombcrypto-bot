@@ -10,6 +10,7 @@ import numpy as np
 import pyautogui
 import platform
 import subprocess
+import webbrowser
 from sys import platform as sys_platform
 from src.logger import logger, loggerMapClicked
 from cv2 import cv2
@@ -219,6 +220,7 @@ def load_images(dir_path='./targets/'):
         dict: dictionary containing the loaded images as key:value pairs.
     """
 
+    time.sleep(2)
     file_names = listdir(dir_path)
     targets = {}
     for file in file_names:
@@ -343,7 +345,14 @@ def scroll():
 
 
 def clickButtons():
-    buttons = positions(images['go-work'], threshold=ct['go_to_work_btn'])
+    time.sleep(2)
+    all_go_work_button = False
+    if pyautogui.locateOnScreen(images["all-go-work"]):
+        buttons = positions(images['all-go-work'], threshold=ct['all_go_to_work_btn'])
+        logger('All button found, click!')
+        all_go_work_button = True
+    else:
+        buttons = positions(images['go-work'], threshold=ct['go_to_work_btn'])
     # print('buttons: {}'.format(len(buttons)))
     for (x, y, w, h) in buttons:
         moveToWithRandomness(x + (w / 2), y + (h / 2), 1)
@@ -354,7 +363,7 @@ def clickButtons():
         if hero_clicks > 20:
             logger('too many hero clicks, try to increase the go_to_work_btn threshold')
             return
-    return len(buttons)
+    return len(buttons), all_go_work_button
 
 
 def isHome(hero, buttons):
@@ -436,8 +445,8 @@ def clickFullBarButtons():
 
 
 def goToHeroes():
+    global login_attempts
     if clickBtn(images['go-back-arrow']):
-        global login_attempts
         login_attempts = 0
 
     # TODO tirar o sleep quando colocar o pulling
@@ -514,8 +523,7 @@ def login():
 
     if clickBtn(images['ok'], timeout=5):
         pass
-        # time.sleep(15)
-        # print('ok button clicked')
+        print('ok button clicked')
 
 
 def sendHeroesHome():
@@ -555,6 +563,10 @@ def sendHeroesHome():
 
 def refreshHeroes():
     logger('🏢 Search for heroes to work')
+    if clickBtn(images['ok'], timeout=5):
+        print('ok button clicked')
+        pyautogui.hotkey('ctrl', 'f5')
+        time.sleep(1)
 
     goToHeroes()
 
@@ -568,20 +580,24 @@ def refreshHeroes():
     buttonsClicked = 1
     empty_scrolls_attempts = c['scroll_attemps']
 
+    is_all_go_work = None
     while empty_scrolls_attempts > 0:
         if c['select_heroes_mode'] == 'full':
             buttonsClicked = clickFullBarButtons()
         elif c['select_heroes_mode'] == 'green':
             buttonsClicked = clickGreenBarButtons()
         else:
-            buttonsClicked = clickButtons()
+            buttonsClicked, is_all_go_work = clickButtons()
 
         sendHeroesHome()
 
         if buttonsClicked == 0:
             empty_scrolls_attempts -= 1
-        scroll()
-        time.sleep(2)
+
+        if not is_all_go_work:
+            scroll()
+            time.sleep(2)
+
     logger('💪 {} heroes sent to work'.format(hero_clicks))
     goToGame()
 
@@ -645,8 +661,14 @@ def main():
     print(cat)
     time.sleep(7)
 
-    if multiple_tabs["enable"]:
-        total_tabs = multiple_tabs["total_tabs"] if multiple_tabs["enable"] else 1
+    total_tabs = multiple_tabs["total_tabs"]
+    for i in range(total_tabs):
+        webbrowser.open_new("https://app.bombcrypto.io/webgl/index.html")
+        print(f"Abrindo aba {i} ...")
+        time.sleep(2)
+
+    if multiple_tabs["control_window"] == "autoclicable":
+
         last = {number + 1: {
             key: 0 for key in ["login", "heroes", "new_map", "check_for_captcha", "refresh_heroes"]
         } for number in range(total_tabs)}
@@ -720,16 +742,15 @@ def main():
                         if current_window["window"]["is_minimized"]:
                             run_command(["wmctrl", "-ir", f"{current_window['window']['id']}", "-b",
                                          "add,maximized_vert,maximized_horz"])
-                        time.sleep(1)
+                        time.sleep(2)
                         try:
                             run_command(["wmctrl", "-ia", f"{current_window['window']['id']}"])
                         except:
                             print(f"Window {current_window['window']['title']}-{index} is closed!!!")
                             windows.remove(current_window)
-                        # time.sleep(5)
+                        time.sleep(5)
                         # run_command(["wmctrl", "-ir", f"{current_window['window']['id']}", "-b",
                         # "remove,maximized_vert,maximized_horz"])
-                        time.sleep(1)
                         print('>>---> Current window: %s-%s' % (current_window['window']['title'], index))
                         manager(current_window)
             else:
@@ -779,6 +800,7 @@ if __name__ == '__main__':
             from selenium.webdriver.support import expected_conditions as EC
             from selenium.common.exceptions import TimeoutException
             from selenium.webdriver.support.ui import WebDriverWait
+
             chrome_service = Service('./chromedriver/chromedriver')
             run_chrome()
     else:

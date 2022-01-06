@@ -158,20 +158,22 @@
   #
   # [pt_BR] Ativar ou desativar o uso de múltiplas contas (abas)
   multiple_tabs:
-    # [en_US]
-    # Default value: False
-    # Available options: False or True
+
+    # [en_US] Window control system...
+    # Default value: native
+    # Available options: native or autoclicable
     #
-    # [pt_BR]
-    # Valor padrão: False
-    # Opções disponíveis: False ou True
-    enable: False
+    # [pt_BR] Systema de controle de janelas...
+    # Valor padrão: native
+    # Opções disponíveis: native ou autoclicable
+    control_window: native
+
     # [en_US]
     # Total number of tabs to be used
     #
     # [pt_BR]
     # total_tabs = Número total de abas a serem usadas (opcional 1 a 99...)
-    total_tabs: 5
+    total_tabs: 2
 
   # [pt_BR]
   # password = Senha da carteira Metamask (Opcional se decidir automatizar o login com selenium)
