@@ -605,11 +605,6 @@ def refreshHeroes():
 def manager(current_window):
     time.sleep(2)
     now = time.time()
-
-    print(f"\nNOW: {now}")
-    print(f'\nNOW - CURRENT_WINDOW: {now - current_window["check_for_captcha"]}')
-    print(f"\nADD_RANDOM_NESS: {addRandomness(time_out['check_for_captcha'] * 60)}\n")
-
     if now - current_window["check_for_captcha"] > addRandomness(time_out['check_for_captcha'] * 60):
         current_window["check_for_captcha"] = now
     if now - current_window["heroes"] > addRandomness(time_out['send_heroes_for_work'] * 60):
@@ -692,7 +687,7 @@ def main():
                 click_next_tab(current_tab)
                 current_title = run_command(["xdotool getactivewindow getwindowname"])[0].replace("\n", "")
                 print(current_title)
-            if current_title != "bombcrypto - Google Chrome":
+            if current_title != "bombcrypto - Google Chrome" and current_title != "bombcrypto - Mozilla Firefox":
                 last_change_tab = now
                 click_next_tab(current_tab)
             else:
@@ -722,7 +717,7 @@ def main():
             time.sleep(1)
             #  Aqui ele percorre as janelas que estiver escrito bombcrypto
             for window in get_windows_with_title('bombcrypto'):
-                if window["title"] == "bombcrypto" and window["application"].count('Google Chrome') >= 1:
+                if window["title"] == "bombcrypto" and window["application"] in ['Google Chrome', 'Mozilla Firefox']:
                     windows.append({
                         "window": window,
                         "login": 0,
