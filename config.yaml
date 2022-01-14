@@ -166,7 +166,7 @@
     # [pt_BR] Systema de controle de janelas...
     # Valor padrão: native
     # Opções disponíveis: native ou autoclicable
-    control_window: native
+    control_window: autoclicable
 
     # [en_US]
     # Total number of tabs to be used

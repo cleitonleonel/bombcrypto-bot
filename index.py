@@ -15,8 +15,8 @@ from sys import platform as sys_platform
 from src.logger import logger, loggerMapClicked
 from cv2 import cv2
 from os import listdir, getcwd, path, environ, popen
-from random import randint
-from random import random
+from random import randint, random
+from libs.human_click import click_btn
 
 # Load config file.
 stream = open("config.yaml", 'r')
@@ -61,7 +61,7 @@ cat = """
 
 def get_platform():
     if sys_platform in ('win32', 'cygwin'):
-        import pygetwindow
+        from pygetwindow import getWindowsWithTitle
         return 'Windows'
     elif sys_platform == 'darwin':
         return 'Macosx'
@@ -77,25 +77,34 @@ def get_platform():
 
 
 def run_command(command):
-    try:
-        result = subprocess.check_output(command).decode("utf-8")
-    except:
-        result = [os.popen(command[0]).read()]
-    return result
+    output, error = subprocess.Popen(command,
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE,
+                                     shell=True).communicate()
+    result = output.decode().strip()
+    return result.split("\n")
 
 
-def get_windows_with_title(title):
-    # sudo apt-get install xdotool wmctrl
-    windows_list = [w.split() for w in run_command(["wmctrl", "-lG"]).splitlines()]
-    # check if the window is "normal" and / or minimized
+def get_windows_with_title(title, only_id=False):
+    if only_id:
+        return run_command(f"xdotool search --name {title}")
+    windows_list = [w.split() for w in run_command(" ".join(["wmctrl", "-lG"]))]
     windows_with_title = [
-        {"id": w[0], "is_minimized": all([
-            "_NET_WM_STATE_HIDDEN" not in run_command(["xprop", "-id", w[0]]),
-            "_NET_WM_WINDOW_TYPE_NORMAL" in run_command(["xprop", "-id", w[0]])]),
+        {"id": int(w[0], 16), "is_minimized": all([
+            "_NET_WM_STATE_HIDDEN" not in run_command(" ".join(["xprop", "-id", w[0]])),
+            "_NET_WM_WINDOW_TYPE_NORMAL" in run_command(" ".join(["xprop", "-id", w[0]]))]),
          "application": " ".join(w[-2:]).replace("–", "").lstrip(), "title": w[7]
          } for w in windows_list if title in w[7]]
 
     return windows_with_title
+
+
+def activate_window(window_id):
+    return run_command(f"xdotool windowactivate {window_id}")
+
+
+def get_window_title():
+    return run_command("xdotool getactivewindow getwindowname")[0]
 
 
 def run_chrome():
@@ -526,6 +535,59 @@ def login():
         print('ok button clicked')
 
 
+def login_human():
+    global login_attempts
+    logger('😿 Checking if game has disconnected')
+
+    if login_attempts > 3:
+        logger('🔃 Too many login attempts, refreshing')
+        login_attempts = 0
+        pyautogui.hotkey('ctrl', 'f5')
+        return
+
+    if click_btn('connect-wallet', 'connect-wallet') or click_btn('wallet', 'wallet'):
+        logger('🎉 Connect wallet button detected, logging in!')
+        login_attempts += 1
+        # TODO mto ele da erro e poco o botao n abre
+        # time.sleep(10)
+
+    if click_btn('select-wallet-2', 'select-wallet-2') or click_btn('confirm', 'confirm'):
+        # sometimes the sign popup appears imediately
+        login_attempts += 1
+        # print('sign button clicked')
+        # print('{} login attempt'.format(login_attempts))
+        if click_btn('treasure-hunt-icon', 'treasure-hunt-icon'):
+            # print('sucessfully login, treasure hunt btn clicked')
+            login_attempts = 0
+        return
+        # click ok button
+
+    if not click_btn('select-wallet-1-no-hover', 'select-wallet-1-no-hover'):
+        if click_btn('select-wallet-1-hover', 'select_wallet_buttons'):
+            pass
+            # o ideal era que ele alternasse entre checar cada um dos 2 por um tempo
+            # print('sleep in case there is no metamask text removed')
+            # time.sleep(20)
+    else:
+        pass
+        # print('sleep in case there is no metamask text removed')
+        # time.sleep(20)
+
+    if click_btn('select-wallet-2', 'select-wallet-2'):
+        login_attempts += 1
+        # print('sign button clicked')
+        # print('{} login attempt'.format(login_attempts))
+        # time.sleep(25)
+        if click_btn('treasure-hunt-icon', 'treasure-hunt-icon'):
+            # print('sucessfully login, treasure hunt btn clicked')
+            login_attempts = 0
+        # time.sleep(15)
+
+    if click_btn('ok', 'ok'):
+        pass
+        print('ok button clicked')
+
+
 def sendHeroesHome():
     if not ch['enable']:
         return
@@ -602,9 +664,8 @@ def refreshHeroes():
     goToGame()
 
 
-def manager(current_window):
+def manager(current_window, now):
     time.sleep(2)
-    now = time.time()
     if now - current_window["check_for_captcha"] > addRandomness(time_out['check_for_captcha'] * 60):
         current_window["check_for_captcha"] = now
     if now - current_window["heroes"] > addRandomness(time_out['send_heroes_for_work'] * 60):
@@ -662,122 +723,63 @@ def main():
         print(f"Abrindo aba {i} ...")
         time.sleep(2)
 
+    bomb_windows_list = []
     if multiple_tabs["control_window"] == "autoclicable":
+        bomb_windows_list = [index + 1 for index in range(total_tabs)]
+    elif get_platform() == 'Linux':
+        bomb_windows_list = get_windows_with_title('bombcrypto')
+    elif get_platform() == 'Windows':
+        bomb_windows_list = getWindowsWithTitle('bombcrypto')
+    else:
+        print('>>---> No window with the name bombcrypto was found')
+        sys.exit()
 
-        last = {number + 1: {
-            key: 0 for key in ["login", "heroes", "new_map", "check_for_captcha", "refresh_heroes"]
-        } for number in range(total_tabs)}
+    windows_list = [{key: window if key == "window" else 0
+                     for key in ["window", "login", "heroes", "new_map", "check_for_captcha", "refresh_heroes"]}
+                    for window in bomb_windows_list]
 
-        current_tab = total_tabs + 1
+    print(windows_list)
+
+    if multiple_tabs["control_window"] == "autoclicable":
+        clicks = total_tabs + 1
         last_change_tab = 0
-
         while True:
+            current_window_title = get_window_title()
             time.sleep(1)
-            current_title = run_command(["xdotool getactivewindow getwindowname"])[0].replace("\n", "")
-            print(f"\n{current_title}")
+            print(f"\n{current_window_title}")
             now = time.time()
             if now - last_change_tab > addRandomness(time_out['change_tab'] * 60):
-                current_tab -= 1
-                if current_tab == 0:
-                    current_tab = total_tabs
+                clicks -= 1
+                if clicks == 0:
+                    clicks = total_tabs
                     print(f"TOTAL DE ABAS ATINGIDO, REINICIANDO CONTAGEM DE ABAS")
-                print(f"\n{json.dumps(last[current_tab], indent=4)}")
-                print(f"\nEFETUANDO {current_tab} CLICKS EM TAB...")
+                print(f"\nEFETUANDO {clicks} CLICKS EM TAB...")
                 last_change_tab = now
-                click_next_tab(current_tab)
-                current_title = run_command(["xdotool getactivewindow getwindowname"])[0].replace("\n", "")
-                print(current_title)
-            if current_title != "bombcrypto - Google Chrome" and current_title != "bombcrypto - Mozilla Firefox":
+                click_next_tab(clicks)
+                current_window_title = get_window_title()
+                print(current_window_title)
+            if current_window_title != "bombcrypto - Google Chrome" \
+                    and current_window_title != "bombcrypto - Mozilla Firefox" \
+                    and current_window_title != "MetaMask Notification":
                 last_change_tab = now
-                click_next_tab(current_tab)
+                click_next_tab(clicks)
             else:
-                if now - last[current_tab]["check_for_captcha"] > addRandomness(time_out['check_for_captcha'] * 60):
-                    last[current_tab]["check_for_captcha"] = now
-                if now - last[current_tab]["heroes"] > addRandomness(time_out['send_heroes_for_work'] * 60):
-                    last[current_tab]["heroes"] = now
-                    refreshHeroes()
-                if now - last[current_tab]["login"] > addRandomness(time_out['check_for_login'] * 60):
-                    sys.stdout.flush()
-                    last[current_tab]["login"] = now
-                    login()
-                if now - last[current_tab]["new_map"] > time_out['check_for_new_map_button']:
-                    last[current_tab]["new_map"] = now
-                    if clickBtn(images['new-map']):
-                        loggerMapClicked()
-                if now - last[current_tab]["refresh_heroes"] > addRandomness(time_out['refresh_heroes_positions'] * 60):
-                    last[current_tab]["refresh_heroes"] = now
-                    refreshHeroesPositions()
-                # clickBtn(teasureHunt)
-                logger(None, progress_indicator=True)
-                sys.stdout.flush()
-                time.sleep(1)
+                print('>>---> Current window: %s-%s' % (get_window_title(), clicks - 1))
+                current_window = windows_list[clicks - 1]
+                manager(current_window, now)
     else:
-        windows = []
-        if get_platform() == 'Linux':
-            time.sleep(1)
-            #  Aqui ele percorre as janelas que estiver escrito bombcrypto
-            for window in get_windows_with_title('bombcrypto'):
-                if window["title"] == "bombcrypto" and window["application"] in ['Google Chrome', 'Mozilla Firefox']:
-                    windows.append({
-                        "window": window,
-                        "login": 0,
-                        "heroes": 0,
-                        "new_map": 0,
-                        "check_for_captcha": 0,
-                        "refresh_heroes": 0
-                    })
-            # https://askubuntu.com/questions/703628/how-to-close-minimize-and-maximize-a-specified-window-from-terminal
-            if len(windows) >= 1:
-                print('>>---> %d windows with the name bombcrypto were found' % len(windows))
-                while True:
-                    for index, current_window in enumerate(windows):
-                        # run_command(["xdotool", "search", "--name", f"{current_window['window']['title']}",
-                        # "windowraise"])
-                        print("IS_MINIMIZED: ", current_window["window"]["is_minimized"])
-                        if current_window["window"]["is_minimized"]:
-                            run_command(["wmctrl", "-ir", f"{current_window['window']['id']}", "-b",
-                                         "add,maximized_vert,maximized_horz"])
-                        time.sleep(2)
-                        try:
-                            run_command(["wmctrl", "-ia", f"{current_window['window']['id']}"])
-                        except:
-                            print(f"Window {current_window['window']['title']}-{index} is closed!!!")
-                            windows.remove(current_window)
-                        time.sleep(5)
-                        # run_command(["wmctrl", "-ir", f"{current_window['window']['id']}", "-b",
-                        # "remove,maximized_vert,maximized_horz"])
-                        print('>>---> Current window: %s-%s' % (current_window['window']['title'], index))
-                        manager(current_window)
-            else:
-                print('>>---> No window with the name bombcrypto was found')
-        elif get_platform() == 'Windows':
-            time.sleep(1)
-            #  Aqui ele percorre as janelas que estiver escrito bombcrypto
-            for window in pygetwindow.getWindowsWithTitle('bombcrypto'):
-                if window.title.count('bombcrypto-bot') >= 1:
-                    continue
-                windows.append({
-                    "window": window,
-                    "login": 0,
-                    "heroes": 0,
-                    "new_map": 0,
-                    "check_for_captcha": 0,
-                    "refresh_heroes": 0
-                })
-            if len(windows) >= 1:
-                print('>>---> %d windows with the name bombcrypto were found' % len(windows))
-                while True:
-                    for currentWindow in windows:
-                        currentWindow["window"].activate()
-                        if not currentWindow["window"].isMaximized:
-                            currentWindow["window"].maximize()
-                        print('>>---> Current window: %s' % currentWindow["window"].title)
-                        time.sleep(2)
-                        manager(currentWindow)
-            else:
-                print('>>---> No window with the name bombcrypto was found')
-        else:
-            print('>>---> Plataforma não suportada!!!')
+        now = time.time()
+        while True:
+            for index, current_window in enumerate(windows_list):
+                if get_platform() == 'Linux':
+                    if current_window["window"]["title"] == "bombcrypto" \
+                            and current_window["window"]["application"] in ['Google Chrome', 'Mozilla Firefox']:
+                        activate_window(current_window["window"]["id"])
+                elif get_platform() == 'Windows':
+                    current_window["window"].activate()
+                time.sleep(2)
+                print('>>---> Current window: %s-%s' % (get_window_title(), index))
+                manager(current_window, now)
 
 
 if __name__ == '__main__':
